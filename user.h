@@ -25,6 +25,7 @@ int sleep(int);
 int uptime(void);
 //new system call function prototype
 int clone(void(*fcn)(void*), void*, void*);
+int join(int);
 
 // ulib.c
 int stat(char*, struct stat*);
