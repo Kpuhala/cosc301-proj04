@@ -175,11 +175,12 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
   if((np = allocproc()) == 0)
     return -1;
    
-  np->kstack = stack;
-  np->state = RUNNABLE;
-  np->pgdir = proc->pgdir;
+   
+  //np->kstack = stack;  <- w/ this line the test passed
+  //but the cpu panics and doesn't print out zombie!
   np->sz = proc->sz;
-  np->parent = proc->parent;
+  np->pgdir = proc->pgdir;
+  np->parent = proc;
   *np->tf = *proc->tf;
 
   // Clear %eax so that fork returns 0 in the child.
@@ -192,7 +193,7 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
 
   safestrcpy(np->name, proc->name, sizeof(proc->name));
  
-   np->pid = proc->pid;
+  // np->pid = proc->pid;
 
   // lock to force the compiler to emit the np->state write last.
   // temporary array to copy into the bottom of new stack 
@@ -214,7 +215,7 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
   np->state = RUNNABLE;
 
   //function returns 0 if a thread executes successfully
-  return 0;
+  return np->pid;
 
 }
 
