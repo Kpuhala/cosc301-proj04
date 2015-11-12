@@ -23,6 +23,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+//new system call function prototype
+int clone(void(*fcn)(void*), void*, void*);
 
 // ulib.c
 int stat(char*, struct stat*);
