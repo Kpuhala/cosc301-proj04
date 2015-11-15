@@ -175,6 +175,8 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
   if((np = allocproc()) == 0)
     return -1;
    
+  // verify that stack is page aligned
+  if ( (int) stack % PGSIZE != 0) return -1;
    
   //np->kstack = stack;  <- w/ this line the test passed
   //but the cpu panics and doesn't print out zombie!
@@ -195,6 +197,8 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
  
   // np->pid = proc->pid;
 
+  // do we still need a pid?
+
   // lock to force the compiler to emit the np->state write last.
   // temporary array to copy into the bottom of new stack 
   // for the thread (i.e., to the high address in stack
@@ -205,6 +209,7 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
   ustack[1] = (uint)arg;
 
   sp -= 8; // stack grows down by 2 ints/8 bytes
+
   if (copyout(np->pgdir, sp, ustack, 8) < 0) {
     // failed to copy bottom of stack into new task
     return -1;
@@ -213,7 +218,7 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
   np->tf->esp = sp;
   switchuvm(np);
   np->state = RUNNABLE;
-
+  
   //function returns 0 if a thread executes successfully
   return np->pid;
 
