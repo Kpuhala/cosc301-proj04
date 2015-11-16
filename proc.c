@@ -227,15 +227,28 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
 
 int join(int pid)
 {
-     struct proc *p;
+  if (proc->is_thread == 1) return -1;
+  // if (pid != proc->parent->pid
+  if (pid == proc->parent->pid) return -1;
+
+  struct proc *p;
+  
   int havekids, pid;
 
+  // if pid == -1 wait for any child to complete
   acquire(&ptable.lock);
   for(;;){
+    // check parent pid of each child process
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+         if (p->pid == pid) {
+	    // check that the parameters are valid
+            if (pid == -1) return -1;
+         }
+    }
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)
+      if(p->parent != proc || p->is_thread != 1)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
@@ -317,17 +330,19 @@ exit(void)
 int
 wait(void)
 {
+  if (proc->is_thread == 1) return -1;
   struct proc *p;
-  int havekids, pid;
-
+  int havekids, pid; 
+  struct proc* temp;
   acquire(&ptable.lock);
   for(;;){
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc)
+      if(p->parent != proc || p->pgdir == proc->pgdir || p->thread == 1)
         continue;
       havekids = 1;
+      
       if(p->state == ZOMBIE){
         // Found one.
         pid = p->pid;
