@@ -298,8 +298,14 @@ exit(void)
       fileclose(proc->ofile[fd]);
       proc->ofile[fd] = 0;
     }
+    if(p->pid == 0){
+      p->killed = 1;
+    // Wake process from sleep if necessary.
+    if(p->state == SLEEPING)
+        p->state = RUNNABLE;
+    join(pid);
   }
-
+  
   begin_op();
   iput(proc->cwd);
   end_op();
