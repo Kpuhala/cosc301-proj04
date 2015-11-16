@@ -21,22 +21,22 @@ volatile int global = 0;
 void worker(void *arg_ptr);
 
 void allocstacks(void **start, void **stack, int threads) {
-  // uint size = (unsigned int)sbrk(0);
-  // printf(1, "heap size before malloc %d\n", size);
+  uint size = (unsigned int)sbrk(0);
+  printf(1, "heap size before malloc %d\n", size);
   *stack = malloc(PGSIZE*(threads+1));
   *start = *stack;
   assert(*stack != NULL);
   if((uint)(*stack) % PGSIZE)
     *stack = (void*)((char*)(*stack) + (PGSIZE - (uint)(*stack) % PGSIZE));
-  // size = (unsigned int)sbrk(0);
-  // printf(1, "heap size after malloc %d %x\n", size, *start);
+  size = (unsigned int)sbrk(0);
+  printf(1, "heap size after malloc %d %x\n", size, *start);
 }
 
 int
 main(int argc, char *argv[])
 {
   ppid = getpid();
-  int numthreads = 2;
+  int numthreads = 1;
   if (argc > 1) {
     numthreads = atoi(argv[1]);
   }
@@ -58,15 +58,15 @@ main(int argc, char *argv[])
   sleep(1);
   while (global < numthreads) {}
   printf(1, "Threads done; now joining all\n");
-/*
+  
   // join threads by id
   for (tid=0; tid < numthreads; tid++) {
     int jointhr = join(pids[tid]);
     assert(jointhr == pids[tid]);
   }
+
   int jointhr = join(-1);
   assert(jointhr == -1); // should return -1; no more threads to join
-  */
 
   printf(1, "TEST PASSED (mainthread)\n");
 

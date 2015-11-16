@@ -95,6 +95,7 @@ userinit(void)
   p->tf->eflags = FL_IF;
   p->tf->esp = PGSIZE;
   p->tf->eip = 0;  // beginning of initcode.S
+  p->is_thread = 0; // initialise as a process not as a thread
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
@@ -173,13 +174,12 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
   struct proc *np;
 
   // Allocate process.
-  if((np = allocproc()) == 0)
-    return -1;
+  if((np = allocproc()) == 0) return -1;
    
   // verify that stack is page aligned
-  if ( (int) stack % PGSIZE != 0) return -1;
+  if ((int) stack % PGSIZE != 0) return -1;
    
-  //np->kstack = stack;  <- w/ this line the test passed
+  //np->kstack = stack;  //<- w/ this line the test passed
   //but the cpu panics and doesn't print out zombie!
   np->sz = proc->sz;
   np->pgdir = proc->pgdir;
@@ -198,7 +198,7 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
 
   safestrcpy(np->name, proc->name, sizeof(proc->name));
  
-  // np->pid = proc->pid;
+  //np->pid = proc->pid;
 
   // do we still need a pid?
 
@@ -207,7 +207,7 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
   // for the thread (i.e., to the high address in stack
   // page, since the stack grows downward)
   uint ustack[2];
-  uint sp = (uint)stack+PGSIZE;
+  uint sp = (uint)stack + PGSIZE;
   ustack[0] = 0xffffffff; // fake return PC
   ustack[1] = (uint)arg;
 
@@ -217,14 +217,13 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
     // failed to copy bottom of stack into new task
     return -1;
   }
+
   np->tf->eip = (uint)fcn;
   np->tf->esp = sp;
   switchuvm(np);
   np->state = RUNNABLE;
-  
 
   return np->pid;
-
 }
 
 // Wait for a child process to exit and return its pid.
