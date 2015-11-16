@@ -12,6 +12,10 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
+struct {
+  struct spinlock lock;
+} aspace;
+
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -178,6 +182,11 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
    
   // verify that stack is page aligned
   if ((int) stack % PGSIZE != 0) return -1;
+
+  // stack must be greater than 1
+  if ((int) stack <= 0) return-1;
+
+  if ((int) fcn <= 0) return -1;
    
   //np->kstack = stack;  //<- w/ this line the test passed
   //but the cpu panics and doesn't print out zombie!
@@ -243,13 +252,22 @@ wait(void)
       if(p->parent != proc || p->pgdir == proc->pgdir || p->is_thread == 1)
         continue;
       havekids = 1;
+      //
+      int present = 0; // where 0 is false
+      
+      // check for other references
+      for (struct proc* temp = p + 1; temp < &ptable.proc[NPROC]; temp++) {
+            if (temp == p) present = 1;
+      }
       
       if(p->state == ZOMBIE){
         // Found one.
         pid = p->pid;
-        kfree(p->kstack);
-        p->kstack = 0;
-        freevm(p->pgdir);
+        if (present == 0) {
+            kfree(p->kstack);
+            p->kstack = 0;
+            freevm(p->pgdir);
+        }
         p->state = UNUSED;
         p->pid = 0;
         p->parent = 0;
