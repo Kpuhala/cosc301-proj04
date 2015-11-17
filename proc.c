@@ -113,7 +113,8 @@ int
 growproc(int n)
 {
   uint sz;
-  
+  initlock(&aspace.lock, "aspace");
+  acquire(&aspace.lock);
   sz = proc->sz;
   if(n > 0){
     if((sz = allocuvm(proc->pgdir, sz, sz + n)) == 0)
@@ -122,7 +123,15 @@ growproc(int n)
     if((sz = deallocuvm(proc->pgdir, sz, sz + n)) == 0)
       return -1;
   }
+
   proc->sz = sz;
+  struct proc* p_parent = (proc->is_thread == 1) ? proc->parent : proc;
+  struct proc* p; 
+
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+     if(p->parent == parent) p->sz = sz;
+  }
+  
   switchuvm(proc);
   return 0;
 }
@@ -524,7 +533,6 @@ int join(int pid)
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(proc, &ptable.lock);  //DOC: wait-sleep
-    //release(&ptable.lock);
 }
 
 }
@@ -546,7 +554,6 @@ exit(void)
      for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 	 if (p->parent == proc) {
 	     p->killed = 1;
-             // Wake process from sleep if necessary.
              if(p->state == SLEEPING) p->state = RUNNABLE;
 	 }
      }
@@ -554,6 +561,7 @@ exit(void)
 
   release(&ptable.lock);
   
+  // wait for children to finish  
   while (1) {
        if (join(-1) == -1) {
            break;
@@ -566,14 +574,6 @@ exit(void)
       fileclose(proc->ofile[fd]);
       proc->ofile[fd] = 0;
     }
-    /*if(proc->pid == 0){
-      proc->killed = 1;
-    // Wake process from sleep if necessary.
-    if(proc->state == SLEEPING)
-        proc->state = RUNNABLE;
-    join(proc->pid);
-    }*/
-  
   }
   
   begin_op();
@@ -596,19 +596,8 @@ exit(void)
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
         p->state = RUNNABLE;
-      //case where join fails
-      //join(p->pid);
-    }
-    /*
-    if(p->parent == proc){
-      p->killed = 1;
-      // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
-        p->state = RUNNABLE;
-      //case where join fails
       join(p->pid);
-      kill(p->pid);
-    }*/
+     }
   }
 
   // Jump into the scheduler, never to return.
