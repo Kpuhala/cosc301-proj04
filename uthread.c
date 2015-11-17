@@ -4,7 +4,7 @@
 #include "user.h"
 #include "x86.h"
 
-#define NTHREAD (256) // upper bound on the number of threads
+#define NTHREAD (64) // upper bound on the number of threads
 #define PGSIZE (4096)
 /*
  * This is where you'll need to implement the user-level functions
@@ -30,18 +30,19 @@ int thread_join(int pid) {
 	if (thread_id != -1) {
 		free(thread_stacks[thread_id]);
 	}
+    //kill(thread_id); // attempt to kill child
 	return thread_id;
 }
 
 int thread_create(void (*thread_stacks_routine)(void *), void *arg) {
-	void *stack = malloc(PGSIZE*2);
+	void *stack = malloc(PGSIZE * 2);
 
 	if((uint)stack % PGSIZE) {
 		stack = stack + (PGSIZE - (uint)stack % PGSIZE);
 	}
 	int pid = clone(thread_stacks_routine, arg, stack);
     // index array by pid so that it is possible to reference
-    if (pid > 256) {
+    if (pid > NTHREAD) {
         printf(1, "Not enough space to start thread %d.", pid);
     }
     

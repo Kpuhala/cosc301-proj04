@@ -256,7 +256,7 @@ wait(void)
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc || p->pgdir == proc->pgdir || p->is_thread == 1)
+      if(p->parent != proc || p->is_thread == 1)
         continue;
       havekids = 1;
       //
@@ -484,6 +484,7 @@ int join(int pid)
   acquire(&ptable.lock);
   int exists = 0; // default is false
   int valid = 0;
+  
   for(;;){
     // check parent pid of each child process 
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
@@ -501,13 +502,14 @@ int join(int pid)
     // Scan through table looking for zombie children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != proc || (pid >= 0 && p->pid != pid) || p->is_thread != 1)
+      if(p->parent != proc || (pid >= 0 && p->pid != pid)) //|| p->is_thread != 1)
         continue;
       havekids = 1;
-      if ((pid == -1 && p->is_thread) || (p->pid == pid && p->is_thread == 1)) {
+      if (((pid == -1) || (p->pid == pid)) && p->is_thread == 1) {
           //cprintf("Clearing %d.\n", pid); //caveman debugging
           if(p->state == ZOMBIE){
             // Found one.
+            //cprintf("Killing %d.", p->pid);
             pid = p->pid;
             kfree(p->kstack);
             p->kstack = 0;
@@ -528,7 +530,6 @@ int join(int pid)
     // No point waiting if we don't have any children.
     if(!havekids || proc->killed){
       release(&ptable.lock);
-      cprintf("No kids");
       return -1;
     }
 
@@ -553,10 +554,10 @@ exit(void)
   acquire(&ptable.lock);
   if (proc->is_thread == 0) {
      for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-	 if (p->parent == proc) {
-	     p->killed = 1;
-             if(p->state == SLEEPING) p->state = RUNNABLE;
-	 }
+        if (p->parent == proc) {
+            p->killed = 1;
+            if(p->state == SLEEPING) p->state = RUNNABLE;
+        }
      }
   }
 
@@ -586,21 +587,33 @@ exit(void)
 
   // Parent might be sleeping in wait().
   wakeup1(proc->parent);
-
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if (p->parent == proc) {
+        if(p->state == SLEEPING)
+            wait();
+            //p->state = RUNNABLE;
+        //join(p->pid);
+    }
+  }
+  
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if (p->parent == proc) {
+        if (p->state == ZOMBIE) {
+           p->killed = 1;
+        }
+        join(p->pid);
+    }
+  }
+  
   // Pass abandoned children to init.
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->parent == proc){
       p->parent = initproc;
       if(p->state == ZOMBIE)
         wakeup1(initproc);
-      p->killed = 1;
-      // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
-        p->state = RUNNABLE;
-      join(p->pid);
      }
   }
-
+  
   // Jump into the scheduler, never to return.
   proc->state = ZOMBIE;
   sched();

@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     assert(thread_pid > 0);
   }
   printf(1, "thread creation completed (wait for 10 sec)\n");
-  //while (global < (num_threads+1)) {}
+  while (global < (num_threads+1)); 
   printf(1, "joining threads\n");
 
   int join_pid = 0;
