@@ -23,6 +23,7 @@ int thread_join(int pid) {
 }
 
 int thread_create(void (*start_routine)(void *), void *arg) {
+   //void* stack = malloc(
    return 0;
 }
 

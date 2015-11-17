@@ -129,10 +129,10 @@ growproc(int n)
   struct proc* p; 
 
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-     if(p->parent == parent) p->sz = sz;
-  }
-  
+     if(p->parent == p_parent) p->sz = sz;
+  } 
   switchuvm(proc);
+  release(&aspace.lock);
   return 0;
 }
 
@@ -185,10 +185,7 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
 
   int i;
   struct proc *np;
-
-  // Allocate process.
-  if((np = allocproc()) == 0) return -1;
-   
+    
   // verify that stack is page aligned
   if ((int) stack % PGSIZE != 0) return -1;
 
@@ -196,8 +193,10 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
   if ((int) stack <= 0) return-1;
 
   if ((int) fcn <= 0) return -1;
-   
-  //np->kstack = stack;  //<- w/ this line the test passed
+
+  // Allocate process.
+  if((np = allocproc()) == 0) return -1;
+ 
   //but the cpu panics and doesn't print out zombie!
   np->sz = proc->sz;
   np->pgdir = proc->pgdir;
@@ -273,6 +272,7 @@ wait(void)
       if(p->state == ZOMBIE){
         // Found one.
         pid = p->pid;
+        // frees last occurence
         if (present == 0) {
             kfree(p->kstack);
             p->kstack = 0;
@@ -485,6 +485,7 @@ int join(int pid)
   // if pid == -1 wait for any child to complete
   acquire(&ptable.lock);
   int exists = 0; // default is false
+  int valid = 0;
   for(;;){
     // check parent pid of each child process
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
@@ -492,9 +493,10 @@ int join(int pid)
 	        // check that the parameters are valid
             exists = 1; //process is in this ptable
          }
+         if (p->parent == proc && p->is_thread == 1) valid = 1;
     }
-   
-    if (pid >= 0 && exists == 0) {
+
+    if ((pid >= 0 && exists == 0) || valid == 0) {
         release(&ptable.lock);
         return -1;
     }
@@ -504,7 +506,7 @@ int join(int pid)
       if(p->parent != proc || (pid >= 0 && p->pid != pid) || p->is_thread != 1)
         continue;
       havekids = 1;
-      if (pid == -1 || p->pid == pid) {
+      if ((pid == -1 && p->is_thread) || (p->pid == pid && p->is_thread == 1)) {
           //cprintf("Clearing %d.\n", pid); //caveman debugging
           if(p->state == ZOMBIE){
             // Found one.

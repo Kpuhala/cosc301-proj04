@@ -36,7 +36,7 @@ int
 main(int argc, char *argv[])
 {
   ppid = getpid();
-  int numthreads = 1;
+  int numthreads = 2;
   if (argc > 1) {
     numthreads = atoi(argv[1]);
   }
