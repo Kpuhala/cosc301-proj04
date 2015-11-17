@@ -207,7 +207,6 @@ int clone(void(*fcn)(void*), void *arg, void *stack){
 
   safestrcpy(np->name, proc->name, sizeof(proc->name));
  
-  //np->pid = proc->pid;
 
   // do we still need a pid?
 
@@ -255,8 +254,10 @@ wait(void)
       //
       int present = 0; // where 0 is false
       
+      struct proc* temp;
+      
       // check for other references
-      for (struct proc* temp = p + 1; temp < &ptable.proc[NPROC]; temp++) {
+      for (temp = p + 1; temp < &ptable.proc[NPROC]; temp++) {
             if (temp == p) present = 1;
       }
       
