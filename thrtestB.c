@@ -25,7 +25,6 @@ void worker(void *arg_ptr);
 
 int main(int argc, char *argv[])
 {
-/*
   int num_threads = 4;
   int i;
   ppid = getpid();
@@ -46,13 +45,13 @@ int main(int argc, char *argv[])
   printf(1, "Without locks updating global: %d\n", global);
   printf(1, "(Should be %d if no race condition\n", num_threads * LOOPS);
 
-  printf(1, "TEST PASSED\n");*/
+  printf(1, "TEST PASSED\n");
   exit();
 }
 
 
 void worker(void *arg_ptr) {
-  /*int i;
+  int i;
 
   for(i = 0; i < LOOPS; i++) {
     global += 1;
@@ -60,7 +59,7 @@ void worker(void *arg_ptr) {
 
   lock_acquire(&xlock);
   done += 1;
-  lock_release(&xlock);*/
+  lock_release(&xlock);
 
   exit();
 }

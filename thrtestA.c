@@ -25,7 +25,7 @@ void spawner(void *arg_ptr);
 
 int main(int argc, char *argv[])
 {
-/*
+
   int i;
   ppid = getpid();
   lock_init(&xlock);
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     assert(thread_pid > 0);
   }
   printf(1, "thread creation completed (wait for 10 sec)\n");
-  while (global < (num_threads+1)) {}
+  //while (global < (num_threads+1)) {}
   printf(1, "joining threads\n");
 
   int join_pid = 0;
@@ -70,19 +70,18 @@ void spawner(void *arg_ptr) {
   lock_acquire(&xlock);
   global += 1;
   lock_release(&xlock);
-  */
 
   exit();
 }
 
 void worker(void *arg_ptr) {
-/*  int i;
+  int i;
   int tmp = 0;
 
   for(i = 0; i < 10000; i++) { tmp++; }
   sleep(10);
   lock_acquire(&xlock);
   global += 1;
-  lock_release(&xlock);*/
+  lock_release(&xlock);
   exit();
 }

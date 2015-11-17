@@ -477,17 +477,15 @@ int join(int pid)
 {
   if (proc->is_thread == 1) return -1;
   if (pid == proc->pid) return -1;
-
   struct proc *p;
   
   int havekids;
 
-  // if pid == -1 wait for any child to complete
   acquire(&ptable.lock);
   int exists = 0; // default is false
   int valid = 0;
   for(;;){
-    // check parent pid of each child process
+    // check parent pid of each child process 
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
          if (p->pid == pid) {
 	        // check that the parameters are valid
@@ -530,6 +528,7 @@ int join(int pid)
     // No point waiting if we don't have any children.
     if(!havekids || proc->killed){
       release(&ptable.lock);
+      cprintf("No kids");
       return -1;
     }
 
