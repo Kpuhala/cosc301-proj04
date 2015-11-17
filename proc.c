@@ -554,7 +554,7 @@ exit(void)
 
   release(&ptable.lock);
   
-  for (;;) {
+  while (1) {
        if (join(-1) == -1) {
            break;
        }
